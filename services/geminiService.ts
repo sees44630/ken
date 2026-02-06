@@ -16,6 +16,11 @@ class GeminiService {
   }
 
   public async ruminate(prompt: string): Promise<RuminationResponse> {
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      throw new Error('مفتاح API غير مُهيأ. يرجى إضافة VITE_API_KEY في إعدادات المشروع.');
+    }
+    
     try {
       const response = await this.ai.models.generateContent({
         model: 'gemini-2.0-flash-exp', // Updated model
