@@ -1,11 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-
-const ADS = [
-  { id: 1, title: 'خصم خاص 20%', content: 'على جميع خدمات التحليل الرقمي لفترة محدودة.', code: 'PROMO_BOMA_20' },
-  { id: 2, title: 'إطلاق عقدة جديدة', content: 'توسعة بنية الشبكة في منطقة الشرق الأوسط.', code: 'NODE_UPGRADE_04' },
-  { id: 3, title: 'تأمين الحسابات+', content: 'تشفير البيانات بمستويات عسكرية متقدمة.', code: 'SECURE_GRID_MAX' }
-];
+import { ADS } from '@/constants/data';
 
 const AnnouncementPanel: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,7 +38,7 @@ const AnnouncementPanel: React.FC = () => {
         {/* مؤشرات التنقل النقاط - تم إزالة مربع KEY هنا */}
         <div className="flex items-center gap-4">
           <div className="flex gap-1.5">
-            {ADS.map((_, idx) => (
+            {ADS.map((_: any, idx: number) => (
               <button 
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}

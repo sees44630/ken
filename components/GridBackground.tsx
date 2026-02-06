@@ -12,6 +12,7 @@ const GridBackground: React.FC = () => {
 
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
+    const gridSize = 60;
 
     let mouse = { x: 0, y: 0 };
 
@@ -28,21 +29,39 @@ const GridBackground: React.FC = () => {
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove);
 
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
+    let offset = 0;
+
+    const animate = () => {
+      offset += 0.3; // Slower, more elegant movement
+      if (offset >= gridSize) offset = 0;
       
-      // Base Grid Lines - slightly more visible
-      ctx.strokeStyle = 'rgba(250, 204, 21, 0.08)';
+      ctx.clearRect(0, 0, width, height);
+
+      // Pulse alpha based on time
+      const time = Date.now() * 0.001;
+      const pulse = Math.sin(time) * 0.02 + 0.06;
+
+      // Base Grid Lines
       ctx.lineWidth = 1;
 
-      const gridSize = 60;
+      // Vertical lines
       for (let x = 0; x <= width; x += gridSize) {
+        const dist = Math.abs(x - mouse.x);
+        const mouseEffect = Math.max(0, 1 - dist / 300);
+        ctx.strokeStyle = `rgba(250, 204, 21, ${pulse + mouseEffect * 0.15})`;
+        
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
       }
-      for (let y = 0; y <= height; y += gridSize) {
+      
+      // Horizontal lines
+      for (let y = offset; y <= height; y += gridSize) {
+        const dist = Math.abs(y - mouse.y);
+        const mouseEffect = Math.max(0, 1 - dist / 300);
+        ctx.strokeStyle = `rgba(250, 204, 21, ${pulse + mouseEffect * 0.15})`;
+
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
@@ -50,25 +69,23 @@ const GridBackground: React.FC = () => {
       }
 
       // Intersection points
-      ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
       for (let x = 0; x <= width; x += gridSize) {
-        for (let y = 0; y <= height; y += gridSize) {
-          ctx.fillRect(x - 1, y - 1, 2, 2);
+        for (let y = offset; y <= height; y += gridSize) {
+          const dx = x - mouse.x;
+          const dy = y - mouse.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const mouseEffect = Math.max(0, 1 - dist / 200);
+          
+          ctx.fillStyle = `rgba(250, 204, 21, ${0.1 + mouseEffect * 0.6})`;
+          const size = 1 + mouseEffect * 2;
+          ctx.fillRect(x - size/2, y - size/2, size, size);
         }
       }
 
-      // Reactive Mouse Glow
-      const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 250);
-      gradient.addColorStop(0, 'rgba(250, 204, 21, 0.12)');
-      gradient.addColorStop(0.5, 'rgba(250, 204, 21, 0.05)');
-      gradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      requestAnimationFrame(draw);
+      requestAnimationFrame(animate);
     };
-
-    draw();
+    
+    animate();
 
     return () => {
       window.removeEventListener('resize', handleResize);

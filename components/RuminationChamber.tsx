@@ -1,23 +1,23 @@
-
-import React, { useState } from 'react';
-import { ruminateDigitalStrategy } from '../services/geminiService';
-import { RuminationResult } from '../types';
+import React from 'react';
+import { useRumination } from '@/hooks/useRumination';
 
 const RuminationChamber: React.FC = () => {
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<RuminationResult | null>(null);
-
-  const handleRuminate = async () => {
-    if (!input.trim()) return;
-    setLoading(true);
-    const res = await ruminateDigitalStrategy(input);
-    setResult(res);
-    setLoading(false);
-  };
+  const {
+    input,
+    setInput,
+    loading,
+    error,
+    setError,
+    result,
+    history,
+    ruminate,
+    loadHistoryItem,
+    isListening,
+    startListening
+  } = useRumination();
 
   return (
-    <div className="bg-black border border-yellow-500/50 p-10 md:p-20 rounded-lg shadow-[0_0_60px_rgba(0,0,0,1)] relative text-right">
+    <div className={`bg-black border border-yellow-500/50 p-10 md:p-20 rounded-lg shadow-[0_0_60px_rgba(0,0,0,1)] relative text-right ${loading ? 'animate-scan' : ''}`}>
       <div className="absolute -top-3 -right-3 bg-yellow-400 text-black px-4 py-1 font-mono text-[9px] font-black uppercase tracking-tighter">
         Boma_Logic_v2.0
       </div>
@@ -39,17 +39,37 @@ const RuminationChamber: React.FC = () => {
       <div className="relative group mb-10">
         <textarea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (error) setError('');
+          }}
           placeholder="ادخل تفاصيل طلبك الرقمي هنا..."
-          className="w-full h-56 bg-zinc-900/30 border border-zinc-800 rounded-lg p-8 text-yellow-50 font-mono focus:outline-none focus:border-yellow-400/50 transition-all resize-none placeholder-zinc-800 text-base text-right leading-relaxed"
+          className={`w-full h-56 bg-zinc-900/30 border ${error ? 'border-red-500' : 'border-zinc-800'} rounded-lg p-8 text-yellow-50 font-mono focus:outline-none focus:border-yellow-400/50 transition-all resize-none placeholder-zinc-800 text-base text-right leading-relaxed`}
         />
         <div className="absolute bottom-4 left-6 text-zinc-800 font-mono text-[9px] select-none">NODE_ID: BM-CORE</div>
+        
+        {/* Voice Input Button */}
+        <button 
+          onClick={startListening}
+          className={`absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            isListening ? 'bg-red-500 animate-pulse text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-yellow-400 hover:text-black'
+          }`}
+          title="تحدث الآن"
+        >
+          <i className={`fa-solid ${isListening ? 'fa-microphone-lines' : 'fa-microphone'}`}></i>
+        </button>
+
+        {error && (
+          <div className="absolute -bottom-8 right-0 text-red-500 font-bold text-xs flex items-center gap-2">
+            <i className="fa-solid fa-triangle-exclamation"></i> {error}
+          </div>
+        )}
       </div>
 
       <button
-        onClick={handleRuminate}
+        onClick={ruminate}
         disabled={loading}
-        className="w-full py-6 bg-yellow-400 hover:bg-white text-black font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-6 text-lg group"
+        className="w-full py-6 bg-yellow-400 hover:bg-white text-black font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-6 text-lg group disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
@@ -83,7 +103,7 @@ const RuminationChamber: React.FC = () => {
                 خطوات التنفيذ <i className="fa-solid fa-list-check text-yellow-400 text-xl"></i>
               </h3>
               <div className="grid gap-4">
-                {result.steps.map((step, idx) => (
+                {result.steps.map((step: string, idx: number) => (
                   <div key={idx} className="flex gap-8 p-6 bg-black/20 border border-zinc-900 hover:border-yellow-400/20 transition-all flex-row-reverse group">
                     <span className="text-yellow-400 font-mono font-black text-xl opacity-20 group-hover:opacity-100 transition-opacity">0{idx + 1}</span>
                     <span className="text-zinc-400 font-medium text-right flex-1 leading-relaxed">{step}</span>
@@ -91,6 +111,23 @@ const RuminationChamber: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {history.length > 0 && (
+        <div className="mt-16 pt-10 border-t border-zinc-900">
+          <h4 className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">سجل البحث الأخير // LOCAL_STORAGE</h4>
+          <div className="flex flex-wrap gap-3 justify-end">
+            {history.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => loadHistoryItem(item)}
+                className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-sm text-zinc-400 hover:text-yellow-400 hover:border-yellow-400 transition-all font-mono text-[10px] max-w-[200px] truncate"
+              >
+                {item.query.substring(0, 30)}...
+              </button>
+            ))}
           </div>
         </div>
       )}

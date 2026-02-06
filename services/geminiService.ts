@@ -1,53 +1,62 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
+import { z } from "zod";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const RuminationSchema = z.object({
+  summary: z.string(),
+  steps: z.array(z.string())
+});
 
-export const ruminateDigitalStrategy = async (prompt: string) => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `أنت "بومة ستور"، كيان رقمي ذكي يقدم خدمات رقمية متطورة. شعارك: "التميز الرقمي، ببساطة. دقة في الاختيار.. سرعة في التنفيذ.. وأمان يتجاوز التوقعات".
-    حلل طلب المستخدم التالي وقدم استراتيجية رقمية واضحة باللغة العربية حصراً.
-    طلب المستخدم: ${prompt}`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          summary: {
-            type: Type.STRING,
-            description: "ملخص موجز للحل الرقمي المقترح."
-          },
-          steps: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "خطوات عملية محددة لتنفيذ الاستراتيجية."
-          }
-        },
-        required: ["summary", "steps"]
-      }
-    }
-  });
+export type RuminationResponse = z.infer<typeof RuminationSchema>;
 
-  try {
-    return JSON.parse(response.text || '{}');
-  } catch (e) {
-    console.error("Failed to parse Gemini response", e);
-    return { summary: "حدث خطأ في الشبكة الرقمية.", steps: ["تحديث الصفحة", "المحاولة مرة أخرى"] };
+class GeminiService {
+  private ai: GoogleGenAI;
+
+  constructor() {
+    this.ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
   }
-};
 
-export const chatWithRuminant = async (history: { role: 'user' | 'model', parts: { text: string }[] }[]) => {
-  const ai = getAI();
-  const chat = ai.chats.create({
-    model: 'gemini-3-flash-preview',
-    config: {
-      systemInstruction: 'أنت ممثل "بومة ستور" للخدمات الرقمية. نبرتك احترافية، مستقبلية، وموثوقة. استخدم مصطلحات مثل "تحليل البيانات"، "تأمين الشبكة"، "سرعة التنفيذ". لغتك هي العربية.',
+  public async ruminate(prompt: string): Promise<RuminationResponse> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp', // Updated model
+        contents: `أنت "بومة ستور"، كيان رقمي ذكي يقدم خدمات رقمية متطورة. شعارك: "التميز الرقمي، ببساطة. دقة في الاختيار.. سرعة في التنفيذ.. وأمان يتجاوز التوقعات".
+        حلل طلب المستخدم التالي وقدم استراتيجية رقمية واضحة باللغة العربية حصراً.
+        طلب المستخدم: ${prompt}`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: {
+                type: Type.STRING,
+                description: "ملخص موجز للحل الرقمي المقترح."
+              },
+              steps: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "خطوات عملية محددة لتنفيذ الاستراتيجية."
+              }
+            },
+            required: ["summary", "steps"]
+          }
+        }
+      });
+
+      const rawData = JSON.parse(response.text || '{}');
+      const validated = RuminationSchema.safeParse(rawData);
+
+      if (!validated.success) {
+        console.error("Validation failed", validated.error);
+        throw new Error("Invalid AI response format");
+      }
+
+      return validated.data;
+    } catch (error) {
+      console.error("Gemini Service Error", error);
+      throw error;
     }
-  });
+  }
+}
 
-  const lastMsg = history[history.length - 1].parts[0].text;
-  const result = await chat.sendMessage({ message: lastMsg });
-  return result.text;
-};
+export const geminiService = new GeminiService();
+export const ruminateDigitalStrategy = (prompt: string) => geminiService.ruminate(prompt);
