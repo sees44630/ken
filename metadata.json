@@ -1,0 +1,8 @@
+{
+  "name": "Boma Store ",
+  "description": "بومة ستور: التميز الرقمي، ببساطة. دقة في الاختيار، سرعة في التنفيذ، وأمان يتجاوز التوقعات.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
